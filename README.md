@@ -6,7 +6,7 @@ It uses a small version of the [Movie Len Dataset](https://grouplens.org/dataset
 
 ## Requirements
 
-- [Python] https://www.python.org/downloads/
+- [Python](https://www.python.org/downloads/)
 
 ## Installation
 
