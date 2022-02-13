@@ -1,11 +1,15 @@
 import boto3
 import json
 import logging
+import random
 from time import sleep
+import time
 from datetime import datetime, timedelta
+import csv
 
 from botocore.retries import bucket
 from personalize.movielens_ds_handler import MovieLensDSHandler
+from personalize.dummy_interaction_manager import DummyInteractionsManager
 from personalize.s3_manager import S3Manager
 from personalize.data_manager import DataManager
 
@@ -38,12 +42,27 @@ class PersonalizeManager:
 
     
     def setup_personalize_datasetgroup(self):
-        self.logger.info("Setup datasource data")
-        self.movielens_handler.setup_datasource_data()
-        self.logger.info("Prepare data set")
-        self.movielens_handler.prepare_dataset()
-        self.logger.info("Write data set to a CSV file")
-        self.movielens_handler.write_data_set()
+        data_manager = DummyInteractionsManager()
+        number_users = 30
+        data_manager.generate_dummy_interaction(1000)
+        movies_ids = data_manager.get_movie_list()
+        user_ids = data_manager.get_random_emails(number_users)
+        print(len(user_ids))
+        f = open('dataset/interactions.csv', 'w')
+        writer = csv.writer(f)
+        header = ['USER_ID', 'ITEM_ID', 'RATING', 'TIMESTAMP']        
+        writer.writerow(header)
+        index = 0
+        for mid in movies_ids:
+            print(index)
+            data = [user_ids[index], mid, random.randrange(1,5,1), str(int(time.time()))]
+            writer.writerow(data)
+            if (index+1)>=number_users:
+                index = 0
+            else:
+                index+=1
+        f.close()
+            
 
     def configure_personalize_dataset_group(self):
         self.logger.info("Configure create data set group")
@@ -86,8 +105,8 @@ class PersonalizeManager:
                 "type": "string"
             },
             {
-                "name": "EVENT_TYPE",
-                "type": "string"
+                "name": "RATING",
+                "type": "int"
             },
             {
                 "name": "TIMESTAMP",
@@ -109,7 +128,7 @@ class PersonalizeManager:
 
         dataset_type = "INTERACTIONS"
         create_dataset_response = self.personalize.create_dataset(
-            name = "personalize-demo-movielens-ints",
+            name = "personalize-demo-client-ints",
             datasetType = dataset_type,
             datasetGroupArn = self.data_manager.dataset_group_arn,
             schemaArn = interaction_schema_arn
